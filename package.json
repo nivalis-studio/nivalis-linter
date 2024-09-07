@@ -6,6 +6,20 @@
   "publishConfig": {
     "access": "public"
   },
+  "description": "Lint your code with Biome and ESLint at once",
+  "license": "MIT",
+  "homepage": "https://github.com/nivalis-studio/linter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nivalis-studio/linter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nivalis-studio/linter/issues"
+  },
+  "keywords": [
+    "biome",
+    "eslint"
+  ],
   "scripts": {
     "postinstall": "bunx patch-package",
     "build": "unbuild",
