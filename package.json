@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/yargs": "^17.0.33",
     "unbuild": "^2.0.0"
   },
   "peerDependencies": {
@@ -51,6 +52,7 @@
   },
   "dependencies": {
     "@biomejs/js-api": "^0.6.2",
-    "eslint": "^9.10.0"
+    "eslint": "^9.10.0",
+    "yargs": "^17.7.2"
   }
 }
