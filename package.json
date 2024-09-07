@@ -1,0 +1,21 @@
+{
+  "name": "@nivalis/linter",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "postinstall": "bunx patch-package"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "@biomejs/wasm-bundler": "^1.8.3",
+    "@biomejs/wasm-nodejs": "^1.8.3",
+    "@biomejs/wasm-web": "^1.8.3",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@biomejs/js-api": "^0.6.2",
+    "eslint": "^9.10.0"
+  }
+}
