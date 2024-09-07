@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { Biome, Distribution } from "@biomejs/js-api";
 import { ESLint } from "eslint";
 import { biomeLintFiles } from "./biome";

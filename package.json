@@ -3,10 +3,27 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "postinstall": "bunx patch-package"
+    "postinstall": "bunx patch-package",
+    "build": "unbuild",
+    "prepublishOnly": "unbuild",
+    "prepack": "unbuild"
+  },
+  "bin": "./dist/index.mjs",
+  "files": [
+    "dist"
+  ],
+  "unbuild": {
+    "rollup": { "esbuild": { "target": "node18", "minify": true } },
+    "declaration": true,
+    "clean": true,
+    "failOnWarn": false,
+    "exports": "named",
+    "preserveModules": true,
+    "sourcemap": true
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "unbuild": "^2.0.0"
   },
   "peerDependencies": {
     "@biomejs/wasm-bundler": "^1.8.3",
