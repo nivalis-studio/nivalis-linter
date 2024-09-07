@@ -1,7 +1,11 @@
 {
   "name": "@nivalis/linter",
+  "version": "0.0.1",
   "module": "src/index.ts",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "postinstall": "bunx patch-package",
     "build": "unbuild",
