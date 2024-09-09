@@ -2,7 +2,7 @@
 
 import { Biome, Distribution } from "@biomejs/js-api";
 import { ESLint } from "eslint";
-import { biomeLintFiles } from "./biome";
+import { biomeLintFiles, getBiomeConfig } from "./biome";
 import { mergeResults } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
@@ -10,33 +10,42 @@ import { hideBin } from "yargs/helpers";
 
 const instance = yargs(hideBin(process.argv))
   .scriptName("@nivalis/linter")
-  .usage("")
+  .usage("$0 <files> [args]")
   .version(pkgJson.version)
   .alias("v", "version")
   .alias("h", "help")
   .showHelpOnFail(false)
   .command(
-    "*",
+    "* <files>",
     "Lint your code with Biome and ESLint at once",
     (args) =>
       args
+        .positional("files", {
+          type: "string",
+          description: "Files to lint",
+          demandOption: true,
+        })
         .option("fix", {
           type: "boolean",
           default: true,
           description: "Automatically fix linting errors",
         })
-        .option("files", {
-          type: "string",
-          array: true,
-          description: "Files to lint",
+        .option("only", {
+          choices: ["eslint"],
+          description: "Only run ESLint",
+        })
+        .option("debug", {
+          type: "boolean",
+          default: false,
+          description: "Run in debug mode",
         })
         .help(),
     async (args) => {
       try {
-        const files = args.files;
-        const fix = args.fix;
+        const { files: files_, fix, only } = args;
+        const files = [files_];
 
-        if (!files || files.length === 0) {
+        if (files.length === 0) {
           throw new Error("No files provided");
         }
 
@@ -44,16 +53,28 @@ const instance = yargs(hideBin(process.argv))
           distribution: Distribution.NODE,
         });
 
-        const eslint = new ESLint({ fix });
+        if (!only || only === "biome") {
+          biome.applyConfiguration(JSON.parse(getBiomeConfig()));
+        }
+
+        const eslint = new ESLint({ fix, stats: true, cache: true });
 
         // @ts-expect-error Custom patch
         const allFiles: string[] = await eslint.getFilePaths(files);
 
-        const biomeResults = biomeLintFiles(biome, allFiles, fix);
-        const eslintResults = await eslint.lintFiles(files);
+        let biomeResults: ESLint.LintResult[] = [];
+        let eslintResults: ESLint.LintResult[] = [];
 
-        if (fix) {
-          await ESLint.outputFixes(eslintResults);
+        if (!only || only === "biome") {
+          biomeResults = biomeLintFiles(biome, allFiles, fix);
+        }
+
+        if (!only || only === "eslint") {
+          eslintResults = await eslint.lintFiles(files);
+
+          if (fix && eslintResults.length > 0) {
+            await ESLint.outputFixes(eslintResults);
+          }
         }
 
         const formatter = await eslint.loadFormatter("stylish");

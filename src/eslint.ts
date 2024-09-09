@@ -1,4 +1,4 @@
-import { ESLint } from 'eslint';
+import type { ESLint } from 'eslint';
 
 export const mergeResults = (results: ESLint.LintResult[]): ESLint.LintResult[] => {
   const mergedResults: ESLint.LintResult[] = [];

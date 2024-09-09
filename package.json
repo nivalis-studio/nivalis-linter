@@ -1,6 +1,6 @@
 {
   "name": "@nivalis/linter",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "module": "src/index.ts",
   "type": "module",
   "publishConfig": {
@@ -21,13 +21,17 @@
     "eslint"
   ],
   "scripts": {
-    "postinstall": "bunx patch-package",
+    "postinstall": "npx patch-package",
     "build": "unbuild",
     "prepublishOnly": "unbuild",
     "prepack": "unbuild"
   },
-  "bin": "./dist/index.mjs",
+  "bin": {
+    "nivalis-linter": "./dist/index.mjs"
+  },
   "files": [
+    "package.json",
+    "patches",
     "dist"
   ],
   "unbuild": {
@@ -40,8 +44,11 @@
     "sourcemap": true
   },
   "devDependencies": {
+    "@eslint/js": "^9.10.0",
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33",
+    "globals": "^15.9.0",
+    "typescript-eslint": "^8.4.0",
     "unbuild": "^2.0.0"
   },
   "peerDependencies": {
