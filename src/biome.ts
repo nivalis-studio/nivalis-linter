@@ -116,7 +116,9 @@ const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
       filePath,
     });
 
-    writeFileSync(filePath, formatted.content);
+    if (formatted.content !== result.content) {
+      writeFileSync(filePath, formatted.content);
+    }
   }
 
   return convertBiomeResult(result, filePath, result.content);
