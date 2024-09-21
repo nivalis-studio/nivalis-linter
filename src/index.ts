@@ -42,7 +42,7 @@ const instance = yargs(hideBin(process.argv))
         .help(),
     async (args) => {
       try {
-        const { files: files_, fix, only } = args;
+        const { files: files_, fix, only, debug } = args;
         const files = [files_];
 
         if (files.length === 0) {
@@ -55,7 +55,11 @@ const instance = yargs(hideBin(process.argv))
 
         biome.applyConfiguration(getBiomeConfig());
 
-        const eslint = new ESLint({ fix, stats: true, cache: true });
+        const eslint = new ESLint({
+          fix,
+          stats: debug,
+          cache: true,
+        });
 
         let biomeResults: ESLint.LintResult[] = [];
         let eslintResults: ESLint.LintResult[] = [];
@@ -78,7 +82,7 @@ const instance = yargs(hideBin(process.argv))
           (result) => result.filePath,
         );
 
-        biomeResults = biomeLintFiles(biome, allFiles, fix);
+        biomeResults = biomeLintFiles(biome, allFiles, fix, debug);
 
         const resultText = await formatter.format(
           mergeResults([...biomeResults, ...eslintResults]),

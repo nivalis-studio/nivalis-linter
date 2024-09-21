@@ -111,19 +111,29 @@ const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
     fixFileMode: fix ? "SafeFixes" : undefined,
   });
 
-  const formatted = biome.formatContent(result.content, {
-    filePath,
-  });
+  if (fix) {
+    const formatted = biome.formatContent(result.content, {
+      filePath,
+    });
 
-  writeFileSync(filePath, formatted.content);
+    writeFileSync(filePath, formatted.content);
+  }
 
   return convertBiomeResult(result, filePath, result.content);
 };
 
-export const biomeLintFiles = (biome: Biome, files: string[], fix = true) => {
+export const biomeLintFiles = (
+  biome: Biome,
+  files: string[],
+  fix = true,
+  debug = false,
+) => {
   const results = [];
 
   for (const file of files) {
+    if (debug) {
+      console.debug(`Linting ${file}`);
+    }
     const result = biomeLintFile(biome, file, fix);
 
     results.push(result);
