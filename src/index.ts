@@ -44,7 +44,7 @@ const instance = yargs(hideBin(process.argv))
     async (args) => {
       try {
         const { files: files_, fix, only, debug } = args;
-        const files = [files_];
+        const files = Array.isArray(files_) ? files_ : [files_];
         const eslintOnly = only === "eslint";
 
         if (files.length === 0) {

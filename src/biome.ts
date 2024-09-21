@@ -124,11 +124,7 @@ const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
   return convertBiomeResult(result, filePath, result.content);
 };
 
-export const biomeLintFiles = (
-  biome: Biome,
-  files: string[],
-  fix = true,
-) => {
+export const biomeLintFiles = (biome: Biome, files: string[], fix = true) => {
   const results = [];
 
   for (const file of files) {
