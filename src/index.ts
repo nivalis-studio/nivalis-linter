@@ -44,6 +44,7 @@ const instance = yargs(hideBin(process.argv))
       try {
         const { files: files_, fix, only, debug } = args;
         const files = [files_];
+        const eslintOnly = only === "eslint";
 
         if (files.length === 0) {
           throw new Error("No files provided");
@@ -53,7 +54,7 @@ const instance = yargs(hideBin(process.argv))
           fix,
           stats: debug,
           cache: true,
-          overrideConfig,
+          overrideConfig: eslintOnly ? [] : overrideConfig,
         });
 
         const eslintResults = await eslint.lintFiles(files);
@@ -64,7 +65,7 @@ const instance = yargs(hideBin(process.argv))
 
         const formatter = await eslint.loadFormatter("stylish");
 
-        if (only === "eslint") {
+        if (eslintOnly) {
           console.warn("Running only ESLint");
           const resultText = await formatter.format(eslintResults);
 
