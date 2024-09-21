@@ -3,7 +3,7 @@
 import { Biome, Distribution } from "@biomejs/js-api";
 import { ESLint } from "eslint";
 import { biomeLintFiles, getBiomeConfig } from "./biome";
-import { mergeResults } from "./eslint";
+import { mergeResults, overrideConfig } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -53,6 +53,7 @@ const instance = yargs(hideBin(process.argv))
           fix,
           stats: debug,
           cache: true,
+          overrideConfig,
         });
 
         const eslintResults = await eslint.lintFiles(files);
