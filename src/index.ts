@@ -43,7 +43,7 @@ const instance = yargs(hideBin(process.argv))
 
         const eslint = new ESLint({
           fix,
-          cache: false,
+          cache: true,
           overrideConfig: overrideConfig,
         });
 
