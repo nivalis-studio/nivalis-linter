@@ -108,12 +108,21 @@ const convertBiomeResult = (
   };
 };
 
-const biomeLintFile = async (biome: Biome, filePath: string, fix = true) => {
+const biomeLintFile = async (
+  biome: Biome,
+  filePath: string,
+  fix = true,
+  unsafe = false,
+) => {
   const initialContent = await readFile(filePath, "utf8");
 
   const result = biome.lintContent(initialContent, {
     filePath,
-    fixFileMode: fix ? "SafeFixes" : undefined,
+    fixFileMode: fix
+      ? unsafe
+        ? "SafeAndUnsafeFixes"
+        : "SafeFixes"
+      : undefined,
   });
 
   if (fix) {
@@ -132,13 +141,14 @@ const biomeLintFile = async (biome: Biome, filePath: string, fix = true) => {
 const biomeLintFiles = async (
   biome: Biome,
   files: string[],
-  fix = true,
   concurrency: number = os.cpus().length,
+  fix = true,
+  unsafe = false,
 ) => {
   const limit = pLimit(concurrency);
   const results = await Promise.all(
     files.map((file) =>
-      limit(async () => await biomeLintFile(biome, file, fix)),
+      limit(async () => await biomeLintFile(biome, file, fix, unsafe)),
     ),
   );
 
@@ -229,6 +239,7 @@ export const lintWithBiome = async (
   concurrency: number = os.cpus().length,
   fix = true,
   debug = false,
+  unsafe = false,
 ) => {
   if (debug) {
     performance.mark("biome-start");
@@ -240,7 +251,13 @@ export const lintWithBiome = async (
 
   biome.applyConfiguration(getBiomeConfig());
 
-  const biomeResults = await biomeLintFiles(biome, files, fix, concurrency);
+  const biomeResults = await biomeLintFiles(
+    biome,
+    files,
+    concurrency,
+    fix,
+    unsafe,
+  );
 
   if (debug) {
     performance.mark("biome-end");

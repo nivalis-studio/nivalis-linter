@@ -43,10 +43,15 @@ const instance = yargs(hideBin(process.argv))
           description:
             "Number of concurrent linting processes (default: number of CPU cores)",
         })
+        .option("unsafe", {
+          type: "boolean",
+          default: false,
+          description: "Allow unsafe fixes",
+        })
         .help(),
     async (args) => {
+      const { files: files_, fix, debug, concurrency, unsafe } = args;
       try {
-        const { files: files_, fix, debug, concurrency } = args;
         const patterns = Array.isArray(files_) ? files_ : [files_];
 
         const eslint = new ESLint({
@@ -71,6 +76,7 @@ const instance = yargs(hideBin(process.argv))
           concurrency,
           fix,
           debug,
+          unsafe,
         );
 
         const resultText = await formatter.format(
@@ -86,7 +92,16 @@ const instance = yargs(hideBin(process.argv))
           }
         }
       } catch (error) {
-        console.error(error);
+        if (debug) {
+          console.error(error);
+        } else {
+          console.error(
+            "An error occurred during linting:",
+            (error as Error).message,
+          );
+          console.error("Run with --debug for more information");
+        }
+
         process.exit(1);
       }
     },
