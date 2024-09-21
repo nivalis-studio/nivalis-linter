@@ -7,6 +7,7 @@ import { mergeResults, overrideConfig } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { performance } from "node:perf_hooks";
 
 const instance = yargs(hideBin(process.argv))
   .scriptName("@nivalis/linter")
@@ -57,7 +58,15 @@ const instance = yargs(hideBin(process.argv))
           overrideConfig: eslintOnly ? [] : overrideConfig,
         });
 
+        if (debug) {
+          performance.mark("eslint-start");
+        }
         const eslintResults = await eslint.lintFiles(files);
+
+        if (debug) {
+          performance.mark("eslint-end");
+          performance.measure("eslint", "eslint-start", "eslint-end");
+        }
 
         if (fix && eslintResults.length > 0) {
           await ESLint.outputFixes(eslintResults);
@@ -84,11 +93,27 @@ const instance = yargs(hideBin(process.argv))
 
         biome.applyConfiguration(getBiomeConfig());
 
-        const biomeResults = biomeLintFiles(biome, allFiles, fix, debug);
+        if (debug) {
+          performance.mark("biome-start");
+        }
+
+        const biomeResults = biomeLintFiles(biome, allFiles, fix);
+
+        if (debug) {
+          performance.mark("biome-end");
+          performance.measure("biome", "biome-start", "biome-end");
+        }
 
         const resultText = await formatter.format(
           mergeResults([...biomeResults, ...eslintResults]),
         );
+
+        if (debug) {
+          const measurements = performance.getEntriesByType("measure");
+          for (const measurement of measurements) {
+            console.log(`${measurement.name}: ${measurement.duration}ms`);
+          }
+        }
 
         console.log(resultText ? resultText : "No issues found");
       } catch (error) {

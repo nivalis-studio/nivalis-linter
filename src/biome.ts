@@ -128,14 +128,10 @@ export const biomeLintFiles = (
   biome: Biome,
   files: string[],
   fix = true,
-  debug = false,
 ) => {
   const results = [];
 
   for (const file of files) {
-    if (debug) {
-      console.debug(`Linting ${file}`);
-    }
     const result = biomeLintFile(biome, file, fix);
 
     results.push(result);
