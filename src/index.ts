@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 import { ESLint } from "eslint";
+import { getFilesToLint } from "./files";
 import { lintWithBiome } from "./biome";
 import { lintWithEslint, mergeResults, overrideConfig } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { performance } from "node:perf_hooks";
+import os from "node:os";
 
 const instance = yargs(hideBin(process.argv))
   .scriptName("@nivalis/linter")
@@ -35,10 +37,16 @@ const instance = yargs(hideBin(process.argv))
           default: false,
           description: "Run in debug mode",
         })
+        .option("concurrency", {
+          type: "number",
+          default: os.cpus().length,
+          description:
+            "Number of concurrent linting processes (default: number of CPU cores)",
+        })
         .help(),
     async (args) => {
       try {
-        const { files: files_, fix, debug } = args;
+        const { files: files_, fix, debug, concurrency } = args;
         const patterns = Array.isArray(files_) ? files_ : [files_];
 
         const eslint = new ESLint({
@@ -48,9 +56,11 @@ const instance = yargs(hideBin(process.argv))
         });
 
         const formatter = await eslint.loadFormatter("stylish");
+        const files = await getFilesToLint(eslint, patterns, concurrency);
+
         const [eslntResults, biomeResults] = await Promise.all([
-          lintWithEslint(eslint, patterns, fix, debug),
-          lintWithBiome(eslint, patterns, fix, debug),
+          lintWithEslint(eslint, files, concurrency, fix, debug),
+          lintWithBiome(files, concurrency, fix, debug),
         ]);
 
         const resultText = await formatter.format(

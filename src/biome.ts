@@ -1,13 +1,12 @@
 import { Biome, Distribution } from "@biomejs/js-api";
+import pLimit from "p-limit";
 import { readFileSync, existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
-import fg from "fast-glob";
-import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { performance } from "node:perf_hooks";
 import type { Configuration, LintResult } from "@biomejs/js-api";
 import type { ESLint } from "eslint";
-import pLimit from "p-limit";
 
 const getSeverity = (severity: LintResult["diagnostics"][0]["severity"]) => {
   switch (severity) {
@@ -130,9 +129,13 @@ const biomeLintFile = async (biome: Biome, filePath: string, fix = true) => {
   return convertBiomeResult(result, filePath, result.content);
 };
 
-const biomeLintFiles = async (biome: Biome, files: string[], fix = true) => {
-  const limit = pLimit(os.cpus().length);
-
+const biomeLintFiles = async (
+  biome: Biome,
+  files: string[],
+  fix = true,
+  concurrency: number = os.cpus().length,
+) => {
+  const limit = pLimit(concurrency);
   const results = await Promise.all(
     files.map((file) =>
       limit(async () => await biomeLintFile(biome, file, fix)),
@@ -222,30 +225,14 @@ const getBiomeConfig = (): Configuration => {
 };
 
 export const lintWithBiome = async (
-  eslint: ESLint,
-  patterns: string[],
+  files: string[],
+  concurrency: number = os.cpus().length,
   fix = true,
   debug = false,
 ) => {
-  const globPatterns = patterns.flatMap((pattern) => {
-    if (!fs.existsSync(pattern)) {
-      return pattern;
-    }
-
-    const stats = fs.lstatSync(pattern);
-
-    if (stats.isDirectory()) {
-      return path.join(pattern, "**/*.{js,jsx,ts,tsx}");
-    }
-
-    if (stats.isFile()) {
-      return pattern;
-    }
-
-    return [];
-  });
-
-  const files = await fg(globPatterns, { dot: true, absolute: true });
+  if (debug) {
+    performance.mark("biome-start");
+  }
 
   const biome = await Biome.create({
     distribution: Distribution.NODE,
@@ -253,20 +240,7 @@ export const lintWithBiome = async (
 
   biome.applyConfiguration(getBiomeConfig());
 
-  const allFiles: string[] = (
-    await Promise.all(
-      files.map(async (file) => {
-        const isIgnored = await eslint.isPathIgnored(file);
-        return !isIgnored ? file : null;
-      }),
-    )
-  ).filter(Boolean) as string[];
-
-  if (debug) {
-    performance.mark("biome-start");
-  }
-
-  const biomeResults = await biomeLintFiles(biome, allFiles, fix);
+  const biomeResults = await biomeLintFiles(biome, files, fix, concurrency);
 
   if (debug) {
     performance.mark("biome-end");

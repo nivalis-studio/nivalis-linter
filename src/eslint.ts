@@ -1,10 +1,13 @@
 import { ESLint } from "eslint";
-import type { Linter } from "eslint";
+import os from "node:os";
 import { performance } from "node:perf_hooks";
+import pLimit from "p-limit";
+import type { Linter } from "eslint";
 
 export const lintWithEslint = async (
   eslint: ESLint,
-  patterns: string[],
+  files: string[],
+  concurrency: number = os.cpus().length,
   fix = true,
   debug = false,
 ) => {
@@ -12,11 +15,21 @@ export const lintWithEslint = async (
     performance.mark("eslint-start");
   }
 
-  const eslintResults = await eslint.lintFiles(patterns);
+  const limit = pLimit(concurrency);
 
-  if (fix && eslintResults.length > 0) {
-    await ESLint.outputFixes(eslintResults);
-  }
+  const eslintResults = (
+    await Promise.all(
+      files.map((file) =>
+        limit(async () => {
+          const results = await eslint.lintFiles([file]);
+          if (fix && results.length > 0) {
+            await ESLint.outputFixes(results);
+          }
+          return results;
+        }),
+      ),
+    )
+  ).flat();
 
   if (debug) {
     performance.mark("eslint-end");
