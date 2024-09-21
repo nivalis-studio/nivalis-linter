@@ -21,7 +21,6 @@
     "eslint"
   ],
   "scripts": {
-    "postinstall": "npx patch-package",
     "build": "unbuild",
     "prepublishOnly": "unbuild",
     "prepack": "unbuild"

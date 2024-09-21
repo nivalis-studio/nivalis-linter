@@ -53,41 +53,49 @@ const instance = yargs(hideBin(process.argv))
           distribution: Distribution.NODE,
         });
 
-        if (!only || only === "biome") {
-          biome.applyConfiguration(JSON.parse(getBiomeConfig()));
-        }
+        biome.applyConfiguration(getBiomeConfig());
 
         const eslint = new ESLint({ fix, stats: true, cache: true });
-
-        // @ts-expect-error Custom patch
-        const allFiles: string[] = await eslint.getFilePaths(files);
 
         let biomeResults: ESLint.LintResult[] = [];
         let eslintResults: ESLint.LintResult[] = [];
 
-        if (!only || only === "biome") {
-          biomeResults = biomeLintFiles(biome, allFiles, fix);
-        }
+        eslintResults = await eslint.lintFiles(files);
 
-        if (!only || only === "eslint") {
-          eslintResults = await eslint.lintFiles(files);
-
-          if (fix && eslintResults.length > 0) {
-            await ESLint.outputFixes(eslintResults);
-          }
+        if (fix && eslintResults.length > 0) {
+          await ESLint.outputFixes(eslintResults);
         }
 
         const formatter = await eslint.loadFormatter("stylish");
-        const resultText = formatter.format(
-          mergeResults([...biomeResults, ...eslintResults])
+
+        if (only === "eslint") {
+          console.warn("Running only ESLint");
+          console.log(formatter.format(eslintResults));
+          return;
+        }
+
+        const allFiles: string[] = eslintResults.map(
+          (result) => result.filePath,
         );
 
-        console.log(resultText);
+        biomeResults = biomeLintFiles(biome, allFiles, fix);
+
+        const resultText = await formatter.format(
+          mergeResults([...biomeResults, ...eslintResults]),
+        );
+
+        if (resultText) {
+          console.log(resultText);
+        } else {
+          console.log("No issues found");
+          return;
+        }
       } catch (error) {
         console.error(error);
         process.exit(1);
       }
-    }
+    },
   );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 instance.help().argv;

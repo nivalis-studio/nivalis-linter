@@ -1,10 +1,12 @@
-import type { ESLint } from 'eslint';
+import type { ESLint } from "eslint";
 
-export const mergeResults = (results: ESLint.LintResult[]): ESLint.LintResult[] => {
+export const mergeResults = (
+  results: ESLint.LintResult[],
+): ESLint.LintResult[] => {
   const mergedResults: ESLint.LintResult[] = [];
 
   for (const result of results) {
-    const prev = mergedResults.find(res => res.filePath === result.filePath);
+    const prev = mergedResults.find((res) => res.filePath === result.filePath);
 
     if (!prev) {
       mergedResults.push(result);

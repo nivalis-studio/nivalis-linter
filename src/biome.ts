@@ -1,6 +1,6 @@
 import path from "node:path";
-import { readFileSync, existsSync } from "node:fs";
-import type { Biome, LintResult } from "@biomejs/js-api";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
+import type { Biome, Configuration, LintResult } from "@biomejs/js-api";
 import type { ESLint } from "eslint";
 
 const getSeverity = (severity: LintResult["diagnostics"][0]["severity"]) => {
@@ -33,22 +33,23 @@ const getSeverity = (severity: LintResult["diagnostics"][0]["severity"]) => {
 
 const getLineAncColFromByteOffset = (
   content: string,
-  offset: number
+  offset: number,
 ): { line: number; column: number } => {
   const lines = content.split("\n");
 
   let line = 1;
   let column = 1;
+  let offset_ = offset;
 
   for (let i = 0; i < lines.length; i++) {
     const lineLength = lines[i].length + 1;
 
-    if (offset < lineLength) {
-      column = offset + 1;
+    if (offset_ < lineLength) {
+      column = offset_ + 1;
       break;
     }
 
-    offset -= lineLength;
+    offset_ -= lineLength;
     line++;
   }
 
@@ -58,28 +59,28 @@ const getLineAncColFromByteOffset = (
 const convertBiomeResult = (
   result: LintResult,
   filePath: string,
-  fileContent: string
+  fileContent: string,
 ): ESLint.LintResult => {
   const errors = result.diagnostics.filter(
-    (diagnostic) => getSeverity(diagnostic.severity) === 2
+    (diagnostic) => getSeverity(diagnostic.severity) === 2,
   );
 
   const warnings = result.diagnostics.filter(
-    (diagnostic) => getSeverity(diagnostic.severity) === 1
+    (diagnostic) => getSeverity(diagnostic.severity) === 1,
   );
 
   return {
     filePath,
     fatalErrorCount: result.diagnostics.filter(
-      (diagnostic) => diagnostic.severity === "fatal"
+      (diagnostic) => diagnostic.severity === "fatal",
     ).length,
     errorCount: errors.length,
     warningCount: warnings.length,
     fixableErrorCount: errors.filter((diagnostic) =>
-      diagnostic.tags.includes("fixable")
+      diagnostic.tags.includes("fixable"),
     ).length,
     fixableWarningCount: warnings.filter((diagnostic) =>
-      diagnostic.tags.includes("fixable")
+      diagnostic.tags.includes("fixable"),
     ).length,
 
     usedDeprecatedRules: [],
@@ -88,7 +89,7 @@ const convertBiomeResult = (
     messages: result.diagnostics.map((diagnostic) => {
       const { column, line } = getLineAncColFromByteOffset(
         fileContent,
-        diagnostic.location.span?.[0] || 0
+        diagnostic.location.span?.[0] || 0,
       );
 
       return {
@@ -105,14 +106,16 @@ const convertBiomeResult = (
 const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
   const initialContent = readFileSync(filePath, "utf8");
 
-  const formatted = biome.formatContent(initialContent, {
-    filePath,
-  });
-
-  const result = biome.lintContent(formatted.content, {
+  const result = biome.lintContent(initialContent, {
     filePath,
     fixFileMode: fix ? "SafeFixes" : undefined,
   });
+
+  const formatted = biome.formatContent(result.content, {
+    filePath,
+  });
+
+  writeFileSync(filePath, formatted.content);
 
   return convertBiomeResult(result, filePath, result.content);
 };
@@ -129,7 +132,7 @@ export const biomeLintFiles = (biome: Biome, files: string[], fix = true) => {
   return results;
 };
 
- const findNearestBiomeConfig = () => {
+const findNearestBiomeConfig = () => {
   const cwd = process.cwd();
 
   let currentDir = cwd;
@@ -147,14 +150,37 @@ export const biomeLintFiles = (biome: Biome, files: string[], fix = true) => {
   return null;
 };
 
-export const getBiomeConfig = () => {
-  const biomeConfigPath = findNearestBiomeConfig();
+const defaultConfig: Configuration = {
+  $schema: "https://biomejs.dev/schemas/1.6.0/schema.json",
+  organizeImports: {
+    enabled: true,
+  },
+  linter: {
+    enabled: true,
+    ignore: ["dist/**/*"],
+    rules: {
+      recommended: true,
+    },
+  },
+  formatter: {
+    enabled: true,
+    indentStyle: "space",
+    indentSize: 2,
+  },
+};
 
-  if (!biomeConfigPath) {
-    throw new Error("No biome config found");
+export const getBiomeConfig = (): Configuration => {
+  try {
+    const biomeConfigPath = findNearestBiomeConfig();
+
+    if (!biomeConfigPath) {
+      throw new Error("No biome config found, using default config");
+    }
+
+    const biomeConfig = readFileSync(biomeConfigPath, "utf8");
+    return JSON.parse(biomeConfig);
+  } catch (error) {
+    console.warn(error);
+    return defaultConfig;
   }
-
-  const biomeConfig = readFileSync(biomeConfigPath, "utf8");
-
-  return biomeConfig;
 };
