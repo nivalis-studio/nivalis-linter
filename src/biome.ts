@@ -167,7 +167,6 @@ const defaultConfig: Configuration = {
   },
   linter: {
     enabled: true,
-    ignore: ["dist/**/*"],
     rules: {
       recommended: true,
     },
@@ -177,18 +176,24 @@ const defaultConfig: Configuration = {
     indentStyle: "space",
     indentSize: 2,
   },
+  javascript: {
+    formatter: {
+      quoteStyle: "single",
+    },
+  },
 };
 
 export const getBiomeConfig = (): Configuration => {
   try {
+    let config = defaultConfig;
     const biomeConfigPath = findNearestBiomeConfig();
 
-    if (!biomeConfigPath) {
-      throw new Error("No biome config found, using default config");
+    if (biomeConfigPath) {
+      const biomeConfig = readFileSync(biomeConfigPath, "utf8");
+      config = Object.assign(config, JSON.parse(biomeConfig));
     }
 
-    const biomeConfig = readFileSync(biomeConfigPath, "utf8");
-    return JSON.parse(biomeConfig);
+    return config;
   } catch (error) {
     console.warn(error);
     return defaultConfig;

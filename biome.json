@@ -17,5 +17,10 @@
     "enabled": true,
     "indentStyle": "space",
     "indentSize": 2
+  },
+  "javascript":{
+    "formatter":{
+      "quoteStyle": "double"
+    }
   }
 }
