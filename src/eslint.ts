@@ -3,42 +3,40 @@ import type { ESLint, Linter } from "eslint";
 export const mergeResults = (
   results: ESLint.LintResult[],
 ): ESLint.LintResult[] => {
-  const mergedResults: ESLint.LintResult[] = [];
+  const mergedResults: Record<string, ESLint.LintResult> = {};
 
   for (const result of results) {
-    const prev = mergedResults.find((res) => res.filePath === result.filePath);
-
-    if (!prev) {
-      mergedResults.push(result);
-
+    const filePath = result.filePath;
+    if (!mergedResults[filePath]) {
+      mergedResults[filePath] = { ...result };
       continue;
     }
 
-    mergedResults[mergedResults.indexOf(prev)] = {
-      fatalErrorCount: prev.fatalErrorCount + result.fatalErrorCount,
-      errorCount: prev.errorCount + result.errorCount,
-      warningCount: prev.warningCount + result.warningCount,
-      fixableErrorCount: prev.fixableErrorCount + result.fixableErrorCount,
-      fixableWarningCount:
-        prev.fixableWarningCount + result.fixableWarningCount,
-      filePath: prev.filePath,
-      suppressedMessages: [
-        ...prev.suppressedMessages,
-        ...result.suppressedMessages,
-      ],
-      messages: [...prev.messages, ...result.messages],
-      usedDeprecatedRules: [
-        ...prev.usedDeprecatedRules,
-        ...result.usedDeprecatedRules,
-      ],
+    const existingResult = mergedResults[filePath];
 
-      output: result.output ?? prev.output,
-      source: result.source ?? prev.source,
-      stats: result.stats ?? prev.stats,
-    };
+    existingResult.fatalErrorCount += result.fatalErrorCount;
+    existingResult.errorCount += result.errorCount;
+    existingResult.warningCount += result.warningCount;
+    existingResult.fixableErrorCount += result.fixableErrorCount;
+    existingResult.fixableWarningCount += result.fixableWarningCount;
+
+    existingResult.suppressedMessages = [
+      ...existingResult.suppressedMessages,
+      ...result.suppressedMessages,
+    ];
+
+    existingResult.messages = [...existingResult.messages, ...result.messages];
+    existingResult.usedDeprecatedRules = [
+      ...existingResult.usedDeprecatedRules,
+      ...result.usedDeprecatedRules,
+    ];
+
+    existingResult.output = result.output ?? existingResult.output;
+    existingResult.source = result.source ?? existingResult.source;
+    existingResult.stats = result.stats ?? existingResult.stats;
   }
 
-  return mergedResults;
+  return Object.values(mergedResults);
 };
 
 export const overrideConfig: Linter.Config<Linter.RulesRecord>[] = [
