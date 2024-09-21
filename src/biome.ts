@@ -171,6 +171,9 @@ const defaultConfig: Configuration = {
     enabled: true,
     rules: {
       all: true,
+      nursery:{
+        noReactSpecificProps: "off",
+      }
     },
   },
   formatter: {
