@@ -49,22 +49,13 @@ const instance = yargs(hideBin(process.argv))
           throw new Error("No files provided");
         }
 
-        const biome = await Biome.create({
-          distribution: Distribution.NODE,
-        });
-
-        biome.applyConfiguration(getBiomeConfig());
-
         const eslint = new ESLint({
           fix,
           stats: debug,
           cache: true,
         });
 
-        let biomeResults: ESLint.LintResult[] = [];
-        let eslintResults: ESLint.LintResult[] = [];
-
-        eslintResults = await eslint.lintFiles(files);
+        const eslintResults = await eslint.lintFiles(files);
 
         if (fix && eslintResults.length > 0) {
           await ESLint.outputFixes(eslintResults);
@@ -74,7 +65,10 @@ const instance = yargs(hideBin(process.argv))
 
         if (only === "eslint") {
           console.warn("Running only ESLint");
-          console.log(formatter.format(eslintResults));
+          const resultText = await formatter.format(eslintResults);
+
+          console.log(resultText ? resultText : "No issues found");
+
           return;
         }
 
@@ -82,18 +76,19 @@ const instance = yargs(hideBin(process.argv))
           (result) => result.filePath,
         );
 
-        biomeResults = biomeLintFiles(biome, allFiles, fix, debug);
+        const biome = await Biome.create({
+          distribution: Distribution.NODE,
+        });
+
+        biome.applyConfiguration(getBiomeConfig());
+
+        const biomeResults = biomeLintFiles(biome, allFiles, fix, debug);
 
         const resultText = await formatter.format(
           mergeResults([...biomeResults, ...eslintResults]),
         );
 
-        if (resultText) {
-          console.log(resultText);
-        } else {
-          console.log("No issues found");
-          return;
-        }
+        console.log(resultText ? resultText : "No issues found");
       } catch (error) {
         console.error(error);
         process.exit(1);
