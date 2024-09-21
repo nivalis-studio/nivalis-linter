@@ -513,6 +513,7 @@ export const overrideConfig: Linter.Config<Linter.RulesRecord>[] = [
       "stylistic/yield-star-spacing": "off",
 
       "unicorn/new-for-builtins": "off",
+      "unicorn/no-unnecessary-polyfills": "off",
       "unicorn/expiring-todo-comments": "off",
       "unicorn/escape-case": "off",
       "unicorn/prefer-module": "off",
@@ -606,6 +607,19 @@ export const overrideConfig: Linter.Config<Linter.RulesRecord>[] = [
       "vue/space-infix-ops": "off",
       "vue/space-unary-ops": "off",
       "vue/template-curly-spacing": "off",
+
+      "tailwindcss/classnames-order": "off",
+
+      "node/no-unpublished-import": "off",
+
+      "import/no-duplicates": "off",
+      "import/order": "off",
+      "import/no-self-import": "off",
+      "import/no-import-module-exports": "off",
+      "import/no-unresolved": "off",
+      "import/extensions": "off",
+      "import/no-extraneous-dependencies": "off",
+      "import/no-named-as-default": "off",
 
       "prettier/prettier": "off",
     },

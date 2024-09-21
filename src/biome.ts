@@ -168,17 +168,35 @@ const defaultConfig: Configuration = {
   linter: {
     enabled: true,
     rules: {
-      recommended: true,
+      all: true,
     },
   },
   formatter: {
     enabled: true,
     indentStyle: "space",
     indentSize: 2,
+    formatWithErrors: false,
+    ignore: [],
+    attributePosition: "auto",
+    indentWidth: 2,
+    lineWidth: 80,
+    lineEnding: "lf",
   },
   javascript: {
     formatter: {
       quoteStyle: "single",
+      arrowParentheses: "always",
+      bracketSameLine: false,
+      bracketSpacing: true,
+      jsxQuoteStyle: "double",
+      quoteProperties: "asNeeded",
+      semicolons: "always",
+      trailingCommas: "all",
+    },
+  },
+  json: {
+    formatter: {
+      trailingCommas: "none",
     },
   },
 };
