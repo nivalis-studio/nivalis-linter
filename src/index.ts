@@ -48,8 +48,10 @@ const instance = yargs(hideBin(process.argv))
         });
 
         const formatter = await eslint.loadFormatter("stylish");
-        const eslntResults = await lintWithEslint(eslint, patterns, fix, debug);
-        const biomeResults = await lintWithBiome(eslint, patterns, fix, debug);
+        const [eslntResults, biomeResults] = await Promise.all([
+          lintWithEslint(eslint, patterns, fix, debug),
+          lintWithBiome(eslint, patterns, fix, debug),
+        ]);
 
         const resultText = await formatter.format(
           mergeResults([...biomeResults, ...eslntResults]),
