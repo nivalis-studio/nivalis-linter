@@ -58,13 +58,23 @@ const instance = yargs(hideBin(process.argv))
         const formatter = await eslint.loadFormatter("stylish");
         const files = await getFilesToLint(eslint, patterns, concurrency);
 
-        const [eslntResults, biomeResults] = await Promise.all([
-          lintWithEslint(eslint, files, concurrency, fix, debug),
-          lintWithBiome(files, concurrency, fix, debug),
-        ]);
+        const eslintResults = await lintWithEslint(
+          eslint,
+          files,
+          concurrency,
+          fix,
+          debug,
+        );
+
+        const biomeResults = await lintWithBiome(
+          files,
+          concurrency,
+          fix,
+          debug,
+        );
 
         const resultText = await formatter.format(
-          mergeResults([...biomeResults, ...eslntResults]),
+          mergeResults([...biomeResults, ...eslintResults]),
         );
 
         console.log(resultText ? resultText : "No issues found");
