@@ -59,6 +59,8 @@
   "dependencies": {
     "@biomejs/js-api": "^0.6.2",
     "eslint": "^9.11.0",
+    "fast-glob": "^3.3.2",
+    "p-limit": "^6.1.0",
     "yargs": "^17.7.2"
   }
 }

@@ -1,7 +1,13 @@
+import { Biome, Distribution } from "@biomejs/js-api";
+import { readFileSync, existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import fg from "fast-glob";
+import fs from "node:fs";
 import path from "node:path";
-import { readFileSync, existsSync, writeFileSync } from "node:fs";
-import type { Biome, Configuration, LintResult } from "@biomejs/js-api";
+import os from "node:os";
+import type { Configuration, LintResult } from "@biomejs/js-api";
 import type { ESLint } from "eslint";
+import pLimit from "p-limit";
 
 const getSeverity = (severity: LintResult["diagnostics"][0]["severity"]) => {
   switch (severity) {
@@ -103,8 +109,8 @@ const convertBiomeResult = (
   };
 };
 
-const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
-  const initialContent = readFileSync(filePath, "utf8");
+const biomeLintFile = async (biome: Biome, filePath: string, fix = true) => {
+  const initialContent = await readFile(filePath, "utf8");
 
   const result = biome.lintContent(initialContent, {
     filePath,
@@ -117,21 +123,21 @@ const biomeLintFile = (biome: Biome, filePath: string, fix = true) => {
     });
 
     if (formatted.content !== result.content) {
-      writeFileSync(filePath, formatted.content);
+      await writeFile(filePath, formatted.content);
     }
   }
 
   return convertBiomeResult(result, filePath, result.content);
 };
 
-export const biomeLintFiles = (biome: Biome, files: string[], fix = true) => {
-  const results = [];
+const biomeLintFiles = async (biome: Biome, files: string[], fix = true) => {
+  const limit = pLimit(os.cpus().length);
 
-  for (const file of files) {
-    const result = biomeLintFile(biome, file, fix);
-
-    results.push(result);
-  }
+  const results = await Promise.all(
+    files.map((file) =>
+      limit(async () => await biomeLintFile(biome, file, fix)),
+    ),
+  );
 
   return results;
 };
@@ -198,7 +204,7 @@ const defaultConfig: Configuration = {
   },
 };
 
-export const getBiomeConfig = (): Configuration => {
+const getBiomeConfig = (): Configuration => {
   try {
     let config = defaultConfig;
     const biomeConfigPath = findNearestBiomeConfig();
@@ -213,4 +219,59 @@ export const getBiomeConfig = (): Configuration => {
     console.warn(error);
     return defaultConfig;
   }
+};
+
+export const lintWithBiome = async (
+  eslint: ESLint,
+  patterns: string[],
+  fix = true,
+  debug = false,
+) => {
+  const globPatterns = patterns.flatMap((pattern) => {
+    if (!fs.existsSync(pattern)) {
+      return pattern;
+    }
+
+    const stats = fs.lstatSync(pattern);
+
+    if (stats.isDirectory()) {
+      return path.join(pattern, "**/*.{js,jsx,ts,tsx}");
+    }
+
+    if (stats.isFile()) {
+      return pattern;
+    }
+
+    return [];
+  });
+
+  const files = await fg(globPatterns, { dot: true, absolute: true });
+
+  const biome = await Biome.create({
+    distribution: Distribution.NODE,
+  });
+
+  biome.applyConfiguration(getBiomeConfig());
+
+  const allFiles: string[] = (
+    await Promise.all(
+      files.map(async (file) => {
+        const isIgnored = await eslint.isPathIgnored(file);
+        return !isIgnored ? file : null;
+      }),
+    )
+  ).filter(Boolean) as string[];
+
+  if (debug) {
+    performance.mark("biome-start");
+  }
+
+  const biomeResults = await biomeLintFiles(biome, allFiles, fix);
+
+  if (debug) {
+    performance.mark("biome-end");
+    performance.measure("biome", "biome-start", "biome-end");
+  }
+
+  return biomeResults;
 };

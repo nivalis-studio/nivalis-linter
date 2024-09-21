@@ -1,4 +1,30 @@
-import type { ESLint, Linter } from "eslint";
+import { ESLint } from "eslint";
+import type { Linter } from "eslint";
+import { performance } from "node:perf_hooks";
+
+export const lintWithEslint = async (
+  eslint: ESLint,
+  patterns: string[],
+  fix = true,
+  debug = false,
+) => {
+  if (debug) {
+    performance.mark("eslint-start");
+  }
+
+  const eslintResults = await eslint.lintFiles(patterns);
+
+  if (fix && eslintResults.length > 0) {
+    await ESLint.outputFixes(eslintResults);
+  }
+
+  if (debug) {
+    performance.mark("eslint-end");
+    performance.measure("eslint", "eslint-start", "eslint-end");
+  }
+
+  return eslintResults;
+};
 
 export const mergeResults = (
   results: ESLint.LintResult[],

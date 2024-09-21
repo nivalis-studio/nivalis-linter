@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 
-import { Biome, Distribution } from "@biomejs/js-api";
 import { ESLint } from "eslint";
-import { biomeLintFiles, getBiomeConfig } from "./biome";
-import { mergeResults, overrideConfig } from "./eslint";
+import { lintWithBiome } from "./biome";
+import { lintWithEslint, mergeResults, overrideConfig } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -31,10 +30,6 @@ const instance = yargs(hideBin(process.argv))
           default: true,
           description: "Automatically fix linting errors",
         })
-        .option("only", {
-          choices: ["eslint"],
-          description: "Only run ESLint",
-        })
         .option("debug", {
           type: "boolean",
           default: false,
@@ -43,70 +38,24 @@ const instance = yargs(hideBin(process.argv))
         .help(),
     async (args) => {
       try {
-        const { files: files_, fix, only, debug } = args;
-        const files = Array.isArray(files_) ? files_ : [files_];
-        const eslintOnly = only === "eslint";
-
-        if (files.length === 0) {
-          throw new Error("No files provided");
-        }
+        const { files: files_, fix, debug } = args;
+        const patterns = Array.isArray(files_) ? files_ : [files_];
 
         const eslint = new ESLint({
           fix,
-          stats: debug,
-          cache: true,
-          overrideConfig: eslintOnly ? [] : overrideConfig,
+          cache: false,
+          overrideConfig: overrideConfig,
         });
-
-        if (debug) {
-          performance.mark("eslint-start");
-        }
-        const eslintResults = await eslint.lintFiles(files);
-
-        if (debug) {
-          performance.mark("eslint-end");
-          performance.measure("eslint", "eslint-start", "eslint-end");
-        }
-
-        if (fix && eslintResults.length > 0) {
-          await ESLint.outputFixes(eslintResults);
-        }
 
         const formatter = await eslint.loadFormatter("stylish");
-
-        if (eslintOnly) {
-          console.warn("Running only ESLint");
-          const resultText = await formatter.format(eslintResults);
-
-          console.log(resultText ? resultText : "No issues found");
-
-          return;
-        }
-
-        const allFiles: string[] = eslintResults.map(
-          (result) => result.filePath,
-        );
-
-        const biome = await Biome.create({
-          distribution: Distribution.NODE,
-        });
-
-        biome.applyConfiguration(getBiomeConfig());
-
-        if (debug) {
-          performance.mark("biome-start");
-        }
-
-        const biomeResults = biomeLintFiles(biome, allFiles, fix);
-
-        if (debug) {
-          performance.mark("biome-end");
-          performance.measure("biome", "biome-start", "biome-end");
-        }
+        const eslntResults = await lintWithEslint(eslint, patterns, fix, debug);
+        const biomeResults = await lintWithBiome(eslint, patterns, fix, debug);
 
         const resultText = await formatter.format(
-          mergeResults([...biomeResults, ...eslintResults]),
+          mergeResults([...biomeResults, ...eslntResults]),
         );
+
+        console.log(resultText ? resultText : "No issues found");
 
         if (debug) {
           const measurements = performance.getEntriesByType("measure");
@@ -114,8 +63,6 @@ const instance = yargs(hideBin(process.argv))
             console.log(`${measurement.name}: ${measurement.duration}ms`);
           }
         }
-
-        console.log(resultText ? resultText : "No issues found");
       } catch (error) {
         console.error(error);
         process.exit(1);
