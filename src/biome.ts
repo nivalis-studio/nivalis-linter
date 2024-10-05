@@ -268,13 +268,18 @@ export const lintWithBiome = async (
     performance.mark("biome-start");
   }
 
-  const stream = getFilesToLint(patterns);
+  const {stream, filter} = getFilesToLint(patterns);
 
   const biomeResults: ESLint.LintResult[] = [];
 
   for await (const file of stream) {
-    console.log(file);
-    const result = await biomeLintFile(biome, config, file as string, fix, unsafe);
+    const filePath = file as string;
+
+    if (!filter(path.relative(process.cwd(), filePath))) {
+      continue;
+    }
+
+    const result = await biomeLintFile(biome, config, filePath, fix, unsafe);
     biomeResults.push(result);
   }
 

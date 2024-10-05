@@ -1,6 +1,6 @@
 {
   "name": "@nivalis/linter",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "module": "src/index.ts",
   "type": "module",
   "publishConfig": {
@@ -60,6 +60,7 @@
     "@biomejs/js-api": "^0.6.2",
     "eslint": "^9.11.0",
     "fast-glob": "^3.3.2",
+    "ignore": "^6.0.2",
     "yargs": "^17.7.2"
   }
 }
