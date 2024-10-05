@@ -1,14 +1,19 @@
 import { Biome, Distribution } from "@biomejs/js-api";
-import pLimit from "p-limit";
+import type { LintResult as BiomeLintResult } from "@biomejs/js-api";
 import { readFileSync, existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import os from "node:os";
 import { performance } from "node:perf_hooks";
-import type { Configuration, LintResult } from "@biomejs/js-api";
+import type {
+  Configuration,
+  LintResult as ESLintLintResult,
+} from "@biomejs/js-api";
 import type { ESLint } from "eslint";
+import { getFilesToLint } from "./files";
 
-const getSeverity = (severity: LintResult["diagnostics"][0]["severity"]) => {
+const getSeverity = (
+  severity: ESLintLintResult["diagnostics"][0]["severity"],
+) => {
   switch (severity) {
     case "fatal": {
       return 2;
@@ -61,8 +66,21 @@ const getLineAncColFromByteOffset = (
   return { line, column };
 };
 
+const getEmptyLintResult = (filePath: string): ESLint.LintResult =>
+  ({
+    filePath,
+    fatalErrorCount: 0,
+    errorCount: 0,
+    warningCount: 0,
+    fixableErrorCount: 0,
+    fixableWarningCount: 0,
+    usedDeprecatedRules: [],
+    suppressedMessages: [],
+    messages: [],
+  }) satisfies ESLint.LintResult;
+
 const convertBiomeResult = (
-  result: LintResult,
+  result: ESLintLintResult,
   filePath: string,
   fileContent: string,
 ): ESLint.LintResult => {
@@ -110,20 +128,34 @@ const convertBiomeResult = (
 
 const biomeLintFile = async (
   biome: Biome,
+  config: Configuration,
   filePath: string,
-  fix = true,
-  unsafe = false,
+  fix: boolean,
+  unsafe: boolean,
 ) => {
+  const shouldLint = config.linter?.enabled ?? true;
+
+  if (!shouldLint && !fix) {
+    return getEmptyLintResult(filePath);
+  }
+
   const initialContent = await readFile(filePath, "utf8");
 
-  const result = biome.lintContent(initialContent, {
-    filePath,
-    fixFileMode: fix
-      ? unsafe
-        ? "SafeAndUnsafeFixes"
-        : "SafeFixes"
-      : undefined,
-  });
+  let result: BiomeLintResult = {
+    content: initialContent,
+    diagnostics: [],
+  };
+
+  if (shouldLint) {
+    result = biome.lintContent(initialContent, {
+      filePath,
+      fixFileMode: fix
+        ? unsafe
+          ? "SafeAndUnsafeFixes"
+          : "SafeFixes"
+        : undefined,
+    });
+  }
 
   if (fix) {
     const formatted = biome.formatContent(result.content, {
@@ -136,23 +168,6 @@ const biomeLintFile = async (
   }
 
   return convertBiomeResult(result, filePath, result.content);
-};
-
-const biomeLintFiles = async (
-  biome: Biome,
-  files: string[],
-  concurrency: number = os.cpus().length,
-  fix = true,
-  unsafe = false,
-) => {
-  const limit = pLimit(concurrency);
-  const results = await Promise.all(
-    files.map((file) =>
-      limit(async () => await biomeLintFile(biome, file, fix, unsafe)),
-    ),
-  );
-
-  return results;
 };
 
 const findNearestBiomeConfig = () => {
@@ -217,15 +232,17 @@ const defaultConfig: Configuration = {
   },
 };
 
-const getBiomeConfig = (): Configuration => {
+export const getBiomeConfig = (): Configuration => {
   try {
     let config = defaultConfig;
     const biomeConfigPath = findNearestBiomeConfig();
 
     if (biomeConfigPath) {
       const biomeConfig = readFileSync(biomeConfigPath, "utf8");
-      config = Object.assign(config, JSON.parse(biomeConfig));
+      config = JSON.parse(biomeConfig);
     }
+
+    console.log(config);
 
     return config;
   } catch (error) {
@@ -235,28 +252,28 @@ const getBiomeConfig = (): Configuration => {
 };
 
 export const lintWithBiome = async (
-  files: string[],
-  concurrency: number = os.cpus().length,
-  fix = true,
-  debug = false,
-  unsafe = false,
+  patterns: string[],
+  fix: boolean,
+  debug: boolean,
+  unsafe: boolean,
 ) => {
+  const [biome, files, config] = await Promise.all([
+    Biome.create({
+      distribution: Distribution.NODE,
+    }),
+    getFilesToLint(patterns),
+    getBiomeConfig(),
+  ]);
+  biome.applyConfiguration(config);
+
   if (debug) {
     performance.mark("biome-start");
   }
 
-  const biome = await Biome.create({
-    distribution: Distribution.NODE,
-  });
-
-  biome.applyConfiguration(getBiomeConfig());
-
-  const biomeResults = await biomeLintFiles(
-    biome,
-    files,
-    concurrency,
-    fix,
-    unsafe,
+  const biomeResults = await Promise.all(
+    files.map(
+      async (file) => await biomeLintFile(biome, config, file, fix, unsafe),
+    ),
   );
 
   if (debug) {

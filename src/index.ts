@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 
 import { ESLint } from "eslint";
-import { getFilesToLint } from "./files";
 import { lintWithBiome } from "./biome";
-import { lintWithEslint, mergeResults, overrideConfig } from "./eslint";
+import { lintWithEslint, mergeResults } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { performance } from "node:perf_hooks";
-import os from "node:os";
 
 const instance = yargs(hideBin(process.argv))
   .scriptName("@nivalis/linter")
@@ -29,19 +27,13 @@ const instance = yargs(hideBin(process.argv))
         })
         .option("fix", {
           type: "boolean",
-          default: true,
+          default: false,
           description: "Automatically fix linting errors",
         })
         .option("debug", {
           type: "boolean",
           default: false,
           description: "Run in debug mode",
-        })
-        .option("concurrency", {
-          type: "number",
-          default: os.cpus().length,
-          description:
-            "Number of concurrent linting processes (default: number of CPU cores)",
         })
         .option("unsafe", {
           type: "boolean",
@@ -50,35 +42,26 @@ const instance = yargs(hideBin(process.argv))
         })
         .help(),
     async (args) => {
-      const { files: files_, fix, debug, concurrency, unsafe } = args;
+      const { files: files_, fix, debug, unsafe } = args;
       try {
         const patterns = Array.isArray(files_) ? files_ : [files_];
 
         const eslint = new ESLint({
           fix,
           cache: true,
-          overrideConfig: overrideConfig,
+          // overrideConfig: overrideConfig,
         });
 
-        const formatter = await eslint.loadFormatter("stylish");
-        const files = await getFilesToLint(eslint, patterns, concurrency);
+        const biomeResults = await lintWithBiome(patterns, fix, debug, unsafe);
 
         const eslintResults = await lintWithEslint(
           eslint,
-          files,
-          concurrency,
+          patterns,
           fix,
           debug,
         );
 
-        const biomeResults = await lintWithBiome(
-          files,
-          concurrency,
-          fix,
-          debug,
-          unsafe,
-        );
-
+        const formatter = await eslint.loadFormatter("stylish");
         const resultText = await formatter.format(
           mergeResults([...biomeResults, ...eslintResults]),
         );

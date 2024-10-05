@@ -4,14 +4,7 @@
     "enabled": true
   },
   "linter": {
-    "enabled": true,
-    "ignore": ["dist/**/*"],
-    "rules": {
-      "recommended": true,
-      "style":{
-        "useSingleVarDeclarator": "off"
-      }
-    }
+    "enabled": false
   },
   "formatter": {
     "enabled": true,
