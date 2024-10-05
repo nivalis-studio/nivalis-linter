@@ -242,8 +242,6 @@ export const getBiomeConfig = (): Configuration => {
       config = JSON.parse(biomeConfig);
     }
 
-    console.log(config);
-
     return config;
   } catch (error) {
     console.warn(error);
@@ -257,24 +255,29 @@ export const lintWithBiome = async (
   debug: boolean,
   unsafe: boolean,
 ) => {
-  const [biome, files, config] = await Promise.all([
+  const [biome, config] = await Promise.all([
     Biome.create({
       distribution: Distribution.NODE,
     }),
-    getFilesToLint(patterns),
     getBiomeConfig(),
   ]);
+
   biome.applyConfiguration(config);
 
   if (debug) {
     performance.mark("biome-start");
   }
 
-  const biomeResults = await Promise.all(
-    files.map(
-      async (file) => await biomeLintFile(biome, config, file, fix, unsafe),
-    ),
-  );
+  const stream = getFilesToLint(patterns);
+
+  const biomeResults: ESLint.LintResult[] = [];
+
+  for await (const file of stream) {
+    console.log(file);
+    const result = await biomeLintFile(biome, config, file as string, fix, unsafe);
+    biomeResults.push(result);
+  }
+
 
   if (debug) {
     performance.mark("biome-end");

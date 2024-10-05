@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import fg from "fast-glob";
 
-export const getFilesToLint = async (patterns: string[]) => {
+export const getFilesToLint =  (patterns: string[]) => {
   const globPatterns = patterns.flatMap((pattern) => {
     if (!fs.existsSync(pattern)) {
       return pattern;
@@ -21,6 +21,7 @@ export const getFilesToLint = async (patterns: string[]) => {
     return [];
   });
 
-  const files = await fg(globPatterns, { dot: true, absolute: true });
-  return files;
+  return fg.stream(globPatterns, { dot: true, absolute: true, ignore:
+     ["node_modules/**", "**/node_modules/**"]
+   });
 };
