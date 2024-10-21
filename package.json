@@ -1,6 +1,6 @@
 {
   "name": "@nivalis/linter",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "module": "src/index.ts",
   "type": "module",
   "publishConfig": {
@@ -34,7 +34,12 @@
     "dist"
   ],
   "unbuild": {
-    "rollup": { "esbuild": { "target": "node18", "minify": true } },
+    "rollup": {
+      "esbuild": {
+        "target": "node18",
+        "minify": true
+      }
+    },
     "declaration": true,
     "clean": true,
     "failOnWarn": false,
@@ -43,22 +48,22 @@
     "sourcemap": true
   },
   "devDependencies": {
-    "@eslint/js": "^9.11.0",
+    "@eslint/js": "^9.13.0",
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33",
-    "globals": "^15.9.0",
-    "typescript-eslint": "^8.6.0",
+    "globals": "^15.11.0",
+    "typescript-eslint": "^8.10.0",
     "unbuild": "^2.0.0"
   },
   "peerDependencies": {
-    "@biomejs/wasm-bundler": "1.8.3",
-    "@biomejs/wasm-nodejs": "1.8.3",
-    "@biomejs/wasm-web": "1.8.3",
-    "typescript": "^5.0.0"
+    "@biomejs/wasm-bundler": "1.9.4",
+    "@biomejs/wasm-nodejs": "1.9.4",
+    "@biomejs/wasm-web": "1.9.4",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@biomejs/js-api": "^0.6.2",
-    "eslint": "^9.11.0",
+    "@biomejs/js-api": "0.7.1",
+    "eslint": "^9.13.0",
     "globby": "^14.0.2",
     "yargs": "^17.7.2"
   }
