@@ -12,7 +12,7 @@ import type { ESLint } from "eslint";
 import { getFilesToLint } from "./files";
 
 const getSeverity = (
-  severity: ESLintLintResult["diagnostics"][0]["severity"],
+  severity: ESLintLintResult["diagnostics"][0]["severity"]
 ) => {
   switch (severity) {
     case "fatal": {
@@ -43,7 +43,7 @@ const getSeverity = (
 
 const getLineAncColFromByteOffset = (
   content: string,
-  offset: number,
+  offset: number
 ): { line: number; column: number } => {
   const lines = content.split("\n");
 
@@ -51,8 +51,8 @@ const getLineAncColFromByteOffset = (
   let column = 1;
   let offset_ = offset;
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineLength = lines[i].length + 1;
+  for (const lineIter of lines) {
+    const lineLength = lineIter.length + 1;
 
     if (offset_ < lineLength) {
       column = offset_ + 1;
@@ -77,33 +77,33 @@ const getEmptyLintResult = (filePath: string): ESLint.LintResult =>
     usedDeprecatedRules: [],
     suppressedMessages: [],
     messages: [],
-  }) satisfies ESLint.LintResult;
+  } satisfies ESLint.LintResult);
 
 const convertBiomeResult = (
   result: ESLintLintResult,
   filePath: string,
-  fileContent: string,
+  fileContent: string
 ): ESLint.LintResult => {
   const errors = result.diagnostics.filter(
-    (diagnostic) => getSeverity(diagnostic.severity) === 2,
+    (diagnostic) => getSeverity(diagnostic.severity) === 2
   );
 
   const warnings = result.diagnostics.filter(
-    (diagnostic) => getSeverity(diagnostic.severity) === 1,
+    (diagnostic) => getSeverity(diagnostic.severity) === 1
   );
 
   return {
     filePath,
     fatalErrorCount: result.diagnostics.filter(
-      (diagnostic) => diagnostic.severity === "fatal",
+      (diagnostic) => diagnostic.severity === "fatal"
     ).length,
     errorCount: errors.length,
     warningCount: warnings.length,
     fixableErrorCount: errors.filter((diagnostic) =>
-      diagnostic.tags.includes("fixable"),
+      diagnostic.tags.includes("fixable")
     ).length,
     fixableWarningCount: warnings.filter((diagnostic) =>
-      diagnostic.tags.includes("fixable"),
+      diagnostic.tags.includes("fixable")
     ).length,
 
     usedDeprecatedRules: [],
@@ -112,7 +112,7 @@ const convertBiomeResult = (
     messages: result.diagnostics.map((diagnostic) => {
       const { column, line } = getLineAncColFromByteOffset(
         fileContent,
-        diagnostic.location.span?.[0] || 0,
+        diagnostic.location.span?.[0] || 0
       );
 
       return {
@@ -131,7 +131,7 @@ const biomeLintFile = async (
   config: Configuration,
   filePath: string,
   fix: boolean,
-  unsafe: boolean,
+  unsafe: boolean
 ) => {
   const shouldLint = config.linter?.enabled ?? true;
 
@@ -189,48 +189,424 @@ const findNearestBiomeConfig = () => {
 };
 
 const defaultConfig: Configuration = {
-  $schema: "https://biomejs.dev/schemas/1.6.0/schema.json",
+  $schema: "https://biomejs.dev/schemas/1.9.0/schema.json",
   organizeImports: {
     enabled: true,
   },
-  linter: {
+  formatter: {
     enabled: true,
+    // useEditorconfig: true,
+    formatWithErrors: false,
+    indentStyle: "space",
+    indentWidth: 2,
+    lineEnding: "lf",
+    lineWidth: 80,
+    attributePosition: "auto",
+    // bracketSpacing: true,
+    ignore: [
+      "**/node_modules",
+      "**/.next",
+      "**/.turbo",
+      "**/.swc",
+      "**/build",
+      "public/build",
+      "**/CODEOWNERS",
+      "**/dist",
+      "**/target",
+      "**/compiled",
+      "**/pnpm-lock.yaml",
+      "**/.env",
+      "**/.gitignore",
+    ],
+  },
+  linter: {
     rules: {
-      all: true,
-      nursery: {
-        noReactSpecificProps: "off",
+      recommended: true,
+      a11y: {
+        noAccessKey: "warn",
+        noAriaUnsupportedElements: "warn",
+        noAutofocus: "warn",
+        noBlankTarget: "error",
+        noDistractingElements: "warn",
+        noHeaderScope: "warn",
+        noInteractiveElementToNoninteractiveRole: "warn",
+        // noLabelWithoutControl: "warn",
+        noNoninteractiveElementToInteractiveRole: "warn",
+        noNoninteractiveTabindex: "warn",
+        noPositiveTabindex: "warn",
+        noRedundantAlt: "warn",
+        noRedundantRoles: "warn",
+        useAltText: "warn",
+        useAnchorContent: "warn",
+        useAriaActivedescendantWithTabindex: "warn",
+        useAriaPropsForRole: "warn",
+        useButtonType: "error",
+        // useFocusableInteractive: "warn",
+        useHeadingContent: "warn",
+        useHtmlLang: "warn",
+        useIframeTitle: "warn",
+        useKeyWithClickEvents: "warn",
+        useKeyWithMouseEvents: "warn",
+        useMediaCaption: "warn",
+        useValidAnchor: "warn",
+        useValidAriaProps: "warn",
+        useValidAriaRole: {
+          level: "warn",
+          options: { allowInvalidRoles: [], ignoreNonDom: false },
+        },
+        useValidAriaValues: "warn",
+        useValidLang: "warn",
+      },
+      complexity: {
+        noExcessiveCognitiveComplexity: "error",
+        noExtraBooleanCast: "error",
+        noForEach: "error",
+        noMultipleSpacesInRegularExpressionLiterals: "error",
+        noStaticOnlyClass: "warn",
+        noUselessCatch: "error",
+        noUselessConstructor: "error",
+        noUselessEmptyExport: "error",
+        noUselessFragments: "error",
+        noUselessLabel: "error",
+        noUselessLoneBlockStatements: "error",
+        noUselessRename: "error",
+        // noUselessStringConcat: "error",
+        noUselessSwitchCase: "error",
+        noUselessTernary: "error",
+        noUselessThisAlias: "error",
+        noUselessTypeConstraint: "error",
+        // noUselessUndefinedInitialization: "error",
+        noVoid: "error",
+        noWith: "error",
+        useArrowFunction: "off",
+        // useDateNow: "error",
+        useFlatMap: "error",
+        useLiteralKeys: "error",
+        useOptionalChain: "error",
+        useRegexLiterals: "error",
+      },
+      correctness: {
+        noChildrenProp: "error",
+        noConstAssign: "off",
+        noConstantCondition: "error",
+        noConstructorReturn: "error",
+        noEmptyCharacterClassInRegex: "off",
+        noEmptyPattern: "error",
+        noGlobalObjectCalls: "off",
+        noInnerDeclarations: "error",
+        // noInvalidBuiltinInstantiation: "error",
+        noInvalidConstructorSuper: "off",
+        noInvalidUseBeforeDeclaration: "error",
+        noNewSymbol: "off",
+        noNonoctalDecimalEscape: "error",
+        noPrecisionLoss: "off",
+        noSelfAssign: "error",
+        noSetterReturn: "off",
+        noSwitchDeclarations: "error",
+        noUndeclaredVariables: "off",
+        noUnreachable: "off",
+        noUnreachableSuper: "off",
+        noUnsafeFinally: "error",
+        noUnsafeOptionalChaining: "error",
+        noUnusedLabels: "error",
+        noUnusedPrivateClassMembers: "error",
+        noUnusedVariables: "error",
+        noVoidElementsWithChildren: "error",
+        useArrayLiterals: "off",
+        useExhaustiveDependencies: "warn",
+        useHookAtTopLevel: "error",
+        useIsNan: "error",
+        useJsxKeyInIterable: "error",
+        useValidForDirection: "error",
+        useYield: "error",
+      },
+      security: {
+        noDangerouslySetInnerHtml: "error",
+        noDangerouslySetInnerHtmlWithChildren: "error",
+        noGlobalEval: "error",
+      },
+      style: {
+        noArguments: "error",
+        noCommaOperator: "error",
+        noDefaultExport: "off",
+        noImplicitBoolean: "error",
+        noInferrableTypes: "error",
+        noNamespace: "error",
+        noNegationElse: "off",
+        noNonNullAssertion: "error",
+        noParameterAssign: "error",
+        noParameterProperties: "error",
+        noRestrictedGlobals: {
+          level: "error",
+          options: {
+            deniedGlobals: ["global", "self", "isFinite", "isNaN"],
+          },
+        },
+        noUselessElse: "error",
+        noVar: "error",
+        // noYodaExpression: "error",
+        useAsConstAssertion: "error",
+        useBlockStatements: "off",
+        useCollapsedElseIf: "error",
+        useConsistentArrayType: {
+          level: "error",
+          options: { syntax: "shorthand" },
+        },
+        // useConsistentBuiltinInstantiation: "error",
+        useConst: "warn",
+        useDefaultParameterLast: "error",
+        // useDefaultSwitchClause: "error",
+        // useExplicitLengthCheck: "error",
+        useExponentiationOperator: "error",
+        useExportType: "error",
+        useFilenamingConvention: {
+          level: "warn",
+          options: {
+            strictCase: true,
+            requireAscii: true,
+            filenameCases: ["kebab-case", "PascalCase"],
+          },
+        },
+        useForOf: "error",
+        useFragmentSyntax: "error",
+        useImportType: "error",
+        useLiteralEnumMembers: "error",
+        useNamingConvention: {
+          level: "warn",
+          options: {
+            requireAscii: false,
+            enumMemberCase: "PascalCase",
+            strictCase: false,
+            conventions: [
+              {
+                selector: {
+                  kind: "function",
+                  modifiers: [
+                    "abstract",
+                    "private",
+                    "protected",
+                    "readonly",
+                    "static",
+                  ],
+                  scope: "any",
+                },
+                formats: ["camelCase", "PascalCase"],
+              },
+            ],
+          },
+        },
+        useNodejsImportProtocol: "error",
+        useNumberNamespace: "error",
+        useNumericLiterals: "error",
+        useShorthandAssign: "error",
+        useShorthandFunctionType: "error",
+        useSingleVarDeclarator: "error",
+        useTemplate: "error",
+        // useThrowNewError: "error",
+        // useThrowOnlyError: "error",
+        useWhile: "error",
+      },
+      suspicious: {
+        noArrayIndexKey: "error",
+        noAssignInExpressions: "error",
+        noAsyncPromiseExecutor: "error",
+        noCatchAssign: "error",
+        noClassAssign: "error",
+        noCommentText: "error",
+        noCompareNegZero: "error",
+        noConfusingLabels: "error",
+        noConfusingVoidType: "error",
+        // options: { allow: ["warn", "error"] },
+        noConsoleLog: "warn",
+        noControlCharactersInRegex: "error",
+        noDebugger: "warn",
+        noDoubleEquals: "error",
+        noDuplicateCase: "error",
+        noDuplicateClassMembers: "error",
+        noDuplicateJsxProps: "error",
+        noDuplicateObjectKeys: "off",
+        noDuplicateParameters: "off",
+        noEmptyBlockStatements: "error",
+        noExplicitAny: "warn",
+        noExtraNonNullAssertion: "error",
+        noFallthroughSwitchClause: "warn",
+        noFunctionAssign: "off",
+        noGlobalAssign: "error",
+        noImportAssign: "off",
+        noLabelVar: "error",
+        noMisleadingCharacterClass: "error",
+        noMisleadingInstantiator: "error",
+        noPrototypeBuiltins: "error",
+        noRedeclare: "error",
+        noSelfCompare: "error",
+        noShadowRestrictedNames: "error",
+        noSparseArray: "error",
+        noThenProperty: "error",
+        noUnsafeDeclarationMerging: "error",
+        noUnsafeNegation: "off",
+        useAwait: "error",
+        useDefaultSwitchClauseLast: "error",
+        // useErrorMessage: "error",
+        useGetterReturn: "off",
+        useNamespaceKeyword: "error",
+        // useNumberToFixedDigitsArgument: "error",
+        useValidTypeof: "error",
       },
     },
   },
-  formatter: {
-    enabled: true,
-    indentStyle: "space",
-    indentSize: 2,
-    formatWithErrors: false,
-    ignore: [],
-    attributePosition: "auto",
-    indentWidth: 2,
-    lineWidth: 80,
-    lineEnding: "lf",
-  },
   javascript: {
     formatter: {
-      quoteStyle: "single",
-      arrowParentheses: "always",
-      bracketSameLine: false,
-      bracketSpacing: true,
-      jsxQuoteStyle: "double",
-      quoteProperties: "asNeeded",
-      semicolons: "always",
+      jsxQuoteStyle: "single",
+      quoteProperties: "preserve",
       trailingCommas: "all",
+      semicolons: "always",
+      arrowParentheses: "asNeeded",
+      bracketSameLine: false,
+      quoteStyle: "single",
+      attributePosition: "auto",
+      bracketSpacing: true,
     },
+    globals: [
+      "onscrollend",
+      "onpointerleave",
+      "oncontextrestored",
+      "onemptied",
+      "ongamepaddisconnected",
+      "onkeypress",
+      "onloadeddata",
+      "onmouseup",
+      "onvolumechange",
+      "onpaste",
+      "onstorage",
+      "onkeyup",
+      "onabort",
+      "oncut",
+      "ontransitionrun",
+      "onafterprint",
+      "onblur",
+      "ondurationchange",
+      "ontransitionstart",
+      "oncanplaythrough",
+      "onanimationend",
+      "onmouseleave",
+      "ondragleave",
+      "onplay",
+      "onunhandledrejection",
+      "onbeforeprint",
+      "onpointercancel",
+      "onsubmit",
+      "ondragstart",
+      "onmessage",
+      "location",
+      "onoffline",
+      "onappinstalled",
+      "onwheel",
+      "onended",
+      "onkeydown",
+      "onclick",
+      "onfocus",
+      "onscroll",
+      "ongamepadconnected",
+      "oncanplay",
+      "onpointerdown",
+      "ondeviceorientationabsolute",
+      "onauxclick",
+      "ondevicemotion",
+      "onratechange",
+      "ontransitionend",
+      "onscrollsnapchanging",
+      "onchange",
+      "onselect",
+      "onbeforeinstallprompt",
+      "onbeforetoggle",
+      "onmouseout",
+      "ontimeupdate",
+      "ondragover",
+      "oncuechange",
+      "ontransitioncancel",
+      "onprogress",
+      "onbeforeinput",
+      "onpointerenter",
+      "onmouseenter",
+      "oninvalid",
+      "onpointerout",
+      "onpagereveal",
+      "onpause",
+      "onanimationstart",
+      "onwaiting",
+      "onscrollsnapchange",
+      "ondeviceorientation",
+      "onclose",
+      "onbeforeunload",
+      "oncancel",
+      "onseeked",
+      "onpointerover",
+      "ongotpointercapture",
+      "onloadedmetadata",
+      "onpageshow",
+      "onstalled",
+      "oncontextmenu",
+      "onreset",
+      "ondrag",
+      "onbeforematch",
+      "onload",
+      "onlostpointercapture",
+      "onsuspend",
+      "onselectionchange",
+      "onpagehide",
+      "onrejectionhandled",
+      "onunload",
+      "onanimationcancel",
+      "onmousedown",
+      "onpointerup",
+      "onmouseover",
+      "onformdata",
+      "oncontentvisibilityautostatechange",
+      "onresize",
+      "onsearch",
+      "ontoggle",
+      "exports",
+      "onpageswap",
+      "onbeforexrselect",
+      "onlanguagechange",
+      "ondragenter",
+      "onerror",
+      "onpointermove",
+      "onmousemove",
+      "ondrop",
+      "onhashchange",
+      "onsecuritypolicyviolation",
+      "onslotchange",
+      "oncopy",
+      "onanimationiteration",
+      "ondblclick",
+      "ondragend",
+      "onpointerrawupdate",
+      "onpopstate",
+      "onplaying",
+      "oncontextlost",
+      "onloadstart",
+      "onseeking",
+      "oninput",
+      "onmessageerror",
+      "onselectstart",
+      "onmousewheel",
+      "ononline",
+    ],
   },
-  json: {
-    formatter: {
-      trailingCommas: "none",
+  overrides: [
+    {
+      include: ["**/*.json"],
+      javascript: { formatter: { trailingCommas: "none" } },
+      formatter: { indentStyle: "space" },
     },
-  },
-};
+    {
+      include: ["**/*.yml", "**/*.yaml"],
+      javascript: { formatter: { quoteStyle: "double" } },
+      formatter: { indentStyle: "space" },
+    },
+  ],
+} satisfies Configuration;
 
 export const getBiomeConfig = (): Configuration => {
   try {
@@ -253,7 +629,7 @@ export const lintWithBiome = async (
   patterns: string[],
   fix: boolean,
   debug: boolean,
-  unsafe: boolean,
+  unsafe: boolean
 ) => {
   const [biome, config] = await Promise.all([
     Biome.create({
@@ -271,7 +647,9 @@ export const lintWithBiome = async (
   const files = await getFilesToLint(patterns);
 
   const biomeResults: ESLint.LintResult[] = await Promise.all(
-    files.map(async (file) => await biomeLintFile(biome, config, file, fix, unsafe)),
+    files.map(
+      async (file) => await biomeLintFile(biome, config, file, fix, unsafe)
+    )
   );
 
   if (debug) {
