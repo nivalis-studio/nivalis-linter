@@ -2,7 +2,7 @@
 
 import { ESLint } from "eslint";
 import { lintWithBiome } from "./biome";
-import { lintWithEslint, mergeResults } from "./eslint";
+import { lintWithEslint, mergeResults, overrideConfig } from "./eslint";
 import pkgJson from "../package.json" assert { type: "json" };
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -49,7 +49,7 @@ const instance = yargs(hideBin(process.argv))
         const eslint = new ESLint({
           fix,
           cache: true,
-          // overrideConfig: overrideConfig,
+          overrideConfig: overrideConfig,
         });
 
         const biomeResults = await lintWithBiome(patterns, fix, debug, unsafe);
@@ -58,12 +58,12 @@ const instance = yargs(hideBin(process.argv))
           eslint,
           patterns,
           fix,
-          debug,
+          debug
         );
 
         const formatter = await eslint.loadFormatter("stylish");
         const resultText = await formatter.format(
-          mergeResults([...biomeResults, ...eslintResults]),
+          mergeResults([...biomeResults, ...eslintResults])
         );
 
         console.log(resultText ? resultText : "No issues found");
@@ -80,14 +80,14 @@ const instance = yargs(hideBin(process.argv))
         } else {
           console.error(
             "An error occurred during linting:",
-            (error as Error).message,
+            (error as Error).message
           );
           console.error("Run with --debug for more information");
         }
 
         process.exit(1);
       }
-    },
+    }
   );
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
